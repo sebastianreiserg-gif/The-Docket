@@ -1,0 +1,12 @@
+{
+  "name": "The Docket — Lecture Transcripts & Notes",
+  "short_name": "The Docket",
+  "description": "Transcribe and summarize recorded law school lectures, organized by course.",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#F3EEE3",
+  "theme_color": "#1F2733",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml" }
+  ]
+}
