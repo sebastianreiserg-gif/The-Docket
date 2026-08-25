@@ -1,0 +1,1355 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>The Docket</title>
+<link rel="manifest" href="manifest.json" />
+<meta name="theme-color" content="#1F2733" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Libre+Caslon+Display&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,500;0,8..60,600;1,8..60,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#F3EEE3;
+    --paper-raised:#FAF7F0;
+    --ink:#1F2733;
+    --ink-soft:#5C6773;
+    --rule:#CBBFA6;
+    --oxblood:#7C2D2D;
+    --oxblood-dark:#5E2121;
+    --brass:#A98544;
+    --green-ok:#3E5C3E;
+    --shadow: 0 1px 2px rgba(31,39,51,0.08), 0 4px 14px rgba(31,39,51,0.06);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;height:100%;}
+  body{
+    background:
+      linear-gradient(var(--paper), var(--paper));
+    background-color:var(--paper);
+    color:var(--ink);
+    font-family:'Source Serif 4', Georgia, serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  body::before{
+    content:"";
+    position:fixed;inset:0;
+    pointer-events:none;
+    opacity:0.035;
+    background-image:radial-gradient(circle at 1px 1px, #1F2733 1px, transparent 0);
+    background-size:22px 22px;
+    z-index:0;
+  }
+  .mono{font-family:'IBM Plex Mono', monospace;}
+  .display{font-family:'Libre Caslon Display', 'Source Serif 4', serif;}
+
+  #app{position:relative;z-index:1;display:flex;min-height:100vh;}
+
+  /* Sidebar — case-file tabs */
+  .sidebar{
+    width:230px;flex-shrink:0;
+    background:var(--paper-raised);
+    border-right:1px solid var(--rule);
+    display:flex;flex-direction:column;
+    padding:22px 0 16px;
+  }
+  .brand{
+    padding:0 20px 18px;
+    border-bottom:1px solid var(--rule);
+    margin-bottom:10px;
+  }
+  .brand .display{font-size:22px;letter-spacing:0.3px;line-height:1.15;}
+  .brand .mono{font-size:10px;color:var(--ink-soft);letter-spacing:1.5px;text-transform:uppercase;margin-top:4px;}
+
+  .course-tab{
+    position:relative;
+    padding:13px 20px 13px 24px;
+    cursor:pointer;
+    border-bottom:1px solid rgba(203,191,166,0.5);
+    transition:background 0.15s ease;
+  }
+  .course-tab:hover{background:rgba(122,45,45,0.05);}
+  .course-tab.active{background:var(--paper);}
+  .course-tab.active::before{
+    content:"";position:absolute;left:0;top:0;bottom:0;width:4px;
+    background:var(--oxblood);
+  }
+  .course-tab .name{font-size:15px;font-weight:600;display:block;}
+  .course-tab .count{font-size:11px;color:var(--ink-soft);font-family:'IBM Plex Mono',monospace;}
+
+  .add-course{
+    padding:11px 20px 11px 24px;
+    font-size:13px;color:var(--ink-soft);cursor:pointer;
+    font-family:'IBM Plex Mono',monospace;
+  }
+  .add-course:hover{color:var(--oxblood);}
+
+  .sidebar-foot{margin-top:auto;padding:14px 20px 0;border-top:1px solid var(--rule);}
+  .settings-btn{
+    display:flex;align-items:center;gap:8px;
+    font-family:'IBM Plex Mono',monospace;font-size:12px;
+    color:var(--ink-soft);cursor:pointer;padding:8px 0;
+  }
+  .settings-btn:hover{color:var(--ink);}
+
+  /* Main */
+  .main{flex:1;display:flex;flex-direction:column;min-width:0;}
+  .topbar{
+    padding:24px 32px 16px;
+    border-bottom:1px solid var(--rule);
+    display:flex;align-items:flex-end;justify-content:space-between;gap:16px;
+  }
+  .topbar h1{margin:0;font-size:28px;font-weight:400;}
+  .topbar .sub{font-size:12px;color:var(--ink-soft);font-family:'IBM Plex Mono',monospace;margin-top:4px;text-transform:uppercase;letter-spacing:1px;}
+
+  .searchwrap{position:relative;}
+  .searchwrap input{
+    width:260px;padding:9px 12px 9px 30px;
+    background:var(--paper-raised);
+    border:1px solid var(--rule);
+    font-family:'IBM Plex Mono',monospace;font-size:12.5px;
+    color:var(--ink);
+  }
+  .searchwrap input:focus{outline:2px solid var(--oxblood);outline-offset:-1px;}
+  .searchwrap .icon{position:absolute;left:10px;top:50%;transform:translateY(-50%);opacity:0.5;font-size:13px;}
+
+  .btn{
+    font-family:'IBM Plex Mono',monospace;font-size:12.5px;
+    padding:10px 16px;border:1px solid var(--oxblood);
+    background:var(--oxblood);color:var(--paper-raised);
+    cursor:pointer;letter-spacing:0.3px;
+  }
+  .btn:hover{background:var(--oxblood-dark);}
+  .btn.ghost{background:transparent;color:var(--oxblood);}
+  .btn.ghost:hover{background:rgba(122,45,45,0.08);}
+  .btn:disabled{opacity:0.45;cursor:not-allowed;}
+
+  .content{flex:1;overflow-y:auto;padding:24px 32px 60px;}
+
+  .empty{
+    margin-top:60px;text-align:center;color:var(--ink-soft);
+  }
+  .empty .display{font-size:20px;color:var(--ink);margin-bottom:6px;}
+
+  .docket-list{display:flex;flex-direction:column;gap:10px;}
+  .entry{
+    background:var(--paper-raised);
+    border:1px solid var(--rule);
+    border-left:3px solid var(--brass);
+    padding:14px 18px;
+    cursor:pointer;
+    display:flex;justify-content:space-between;align-items:center;
+    gap:16px;
+    box-shadow:var(--shadow);
+  }
+  .entry:hover{border-left-color:var(--oxblood);}
+  .entry .num{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--brass);letter-spacing:0.5px;}
+  .entry .title{font-size:16px;margin:2px 0 4px;}
+  .entry .meta{font-size:11.5px;color:var(--ink-soft);font-family:'IBM Plex Mono',monospace;}
+  .entry .status{font-size:10.5px;font-family:'IBM Plex Mono',monospace;text-transform:uppercase;letter-spacing:0.8px;padding:3px 8px;border:1px solid var(--rule);white-space:nowrap;}
+  .status.ready{color:var(--green-ok);border-color:var(--green-ok);}
+  .status.working{color:var(--brass);border-color:var(--brass);}
+  .status.error{color:var(--oxblood);border-color:var(--oxblood);}
+
+  /* Modal */
+  .overlay{
+    position:fixed;inset:0;background:rgba(31,39,51,0.55);
+    display:flex;align-items:center;justify-content:center;z-index:50;
+    padding:20px;
+  }
+  .modal{
+    background:var(--paper-raised);
+    border:1px solid var(--rule);
+    width:100%;max-width:560px;max-height:88vh;overflow-y:auto;
+    box-shadow:0 12px 40px rgba(0,0,0,0.25);
+  }
+  .modal.wide{max-width:760px;}
+  .modal-head{
+    padding:20px 24px;border-bottom:1px solid var(--rule);
+    display:flex;justify-content:space-between;align-items:center;
+  }
+  .modal-head h2{margin:0;font-size:20px;font-weight:400;}
+  .modal-close{cursor:pointer;font-size:20px;color:var(--ink-soft);background:none;border:none;}
+  .modal-close:hover{color:var(--oxblood);}
+  .modal-body{padding:22px 24px;}
+
+  label{display:block;font-family:'IBM Plex Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:0.8px;color:var(--ink-soft);margin:16px 0 6px;}
+  label:first-child{margin-top:0;}
+  input[type=text], input[type=date], input[type=password], select, textarea{
+    width:100%;padding:10px 12px;
+    background:var(--paper);border:1px solid var(--rule);
+    font-family:'Source Serif 4',serif;font-size:14.5px;color:var(--ink);
+  }
+  input:focus, select:focus, textarea:focus{outline:2px solid var(--oxblood);outline-offset:-1px;}
+  .filepick{
+    border:1.5px dashed var(--rule);padding:22px;text-align:center;
+    font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:var(--ink-soft);
+    cursor:pointer;
+  }
+  .filepick:hover{border-color:var(--oxblood);color:var(--ink);}
+  .filepick.has-file{border-style:solid;color:var(--ink);}
+
+  .mode-row{display:flex;gap:10px;margin-top:6px;}
+  .mode-opt{
+    flex:1;padding:10px 12px;border:1px solid var(--rule);cursor:pointer;
+    font-family:'IBM Plex Mono',monospace;font-size:12px;text-align:center;
+  }
+  .mode-opt.sel{border-color:var(--oxblood);background:rgba(122,45,45,0.06);color:var(--oxblood);}
+
+  .progress{
+    margin-top:14px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--ink-soft);
+    display:flex;align-items:center;gap:8px;
+  }
+  .dot{width:6px;height:6px;background:var(--brass);border-radius:50%;animation:pulse 1s infinite ease-in-out;}
+  @keyframes pulse{0%,100%{opacity:0.3;}50%{opacity:1;}}
+
+  .modal-foot{padding:16px 24px;border-top:1px solid var(--rule);display:flex;justify-content:flex-end;gap:10px;}
+
+  /* Detail view */
+  .detail-meta{font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--ink-soft);margin-bottom:18px;}
+  .section-label{font-family:'IBM Plex Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--brass);border-bottom:1px solid var(--rule);padding-bottom:6px;margin:22px 0 12px;}
+  .section-label:first-of-type{margin-top:0;}
+  .summary-body{font-size:15.5px;line-height:1.7;white-space:pre-wrap;}
+  .transcript-body{font-size:14px;line-height:1.75;white-space:pre-wrap;color:var(--ink-soft);max-height:340px;overflow-y:auto;background:var(--paper);padding:14px;border:1px solid var(--rule);}
+
+  .help{font-size:11.5px;color:var(--ink-soft);margin-top:5px;line-height:1.5;}
+  .err-box{background:rgba(122,45,45,0.08);border:1px solid var(--oxblood);color:var(--oxblood-dark);padding:10px 12px;font-size:12.5px;font-family:'IBM Plex Mono',monospace;margin-top:12px;}
+
+  @media (max-width:720px){
+    #app{flex-direction:column;}
+    .sidebar{width:100%;flex-direction:row;overflow-x:auto;padding:12px 0;}
+    .brand{display:none;}
+    .sidebar-foot{margin-top:0;border-top:none;border-left:1px solid var(--rule);padding:0 16px;}
+    .course-tab{white-space:nowrap;border-bottom:none;}
+    .topbar{flex-direction:column;align-items:stretch;}
+    .searchwrap input{width:100%;}
+  }
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+/* ============ STATE ============ */
+const DEFAULT_COURSES = [
+  { id: 'torts', name: 'Torts' },
+  { id: 'prof-id', name: 'Professional Identity' },
+  { id: 'lrw', name: 'Legal Research & Writing' },
+];
+
+function normalizeLectures(lectures){
+  return (lectures||[]).map(l => {
+    // Migrate old string-based todos (pre-checklist format) into structured items.
+    if(typeof l.todos === 'string'){
+      const lines = l.todos.split('\n').map(s => s.replace(/^[-•*\s]+/, '').trim()).filter(Boolean);
+      const useful = lines.filter(s => !/^no action items/i.test(s));
+      l.todos = useful.map((text, i) => ({ id: 't_migrated_' + l.id + '_' + i, text, dueDate: null, done: false }));
+    }
+    if(!Array.isArray(l.todos)) l.todos = [];
+    l.todos = l.todos.map((t, i) => ({
+      id: t.id || ('t_migrated_' + l.id + '_' + i),
+      text: t.text || '',
+      dueDate: t.dueDate || null,
+      done: !!t.done
+    }));
+
+    if(!Array.isArray(l.caseLaw)) l.caseLaw = [];
+    l.caseLaw = l.caseLaw.map(c => ({ ...c, citation: c && c.citation ? c.citation : null }));
+
+    if(!Array.isArray(l.keyTerms)) l.keyTerms = [];
+    if(typeof l.keyPoints !== 'string') l.keyPoints = l.keyPoints ? String(l.keyPoints) : '';
+
+    return l;
+  });
+}
+
+function loadState(){
+  let courses, lectures, settings, deletedLectureIds;
+  try { courses = JSON.parse(localStorage.getItem('docket:courses')) || DEFAULT_COURSES; } catch(e){ courses = DEFAULT_COURSES; }
+  try { lectures = JSON.parse(localStorage.getItem('docket:lectures')) || []; } catch(e){ lectures = []; }
+  try { settings = JSON.parse(localStorage.getItem('docket:settings')) || {}; } catch(e){ settings = {}; }
+  try { deletedLectureIds = JSON.parse(localStorage.getItem('docket:deleted')) || []; } catch(e){ deletedLectureIds = []; }
+  settings.mode = settings.mode || 'local';
+  settings.deepgramKey = settings.deepgramKey || '';
+  settings.anthropicKey = settings.anthropicKey || '';
+  settings.githubToken = settings.githubToken || '';
+  settings.gistId = settings.gistId || '';
+  settings.lastSync = settings.lastSync || 0;
+  lectures = normalizeLectures(lectures);
+  return { courses, lectures, settings, deletedLectureIds };
+}
+function saveState(){
+  localStorage.setItem('docket:courses', JSON.stringify(state.courses));
+  localStorage.setItem('docket:lectures', JSON.stringify(state.lectures));
+  localStorage.setItem('docket:settings', JSON.stringify(state.settings));
+  localStorage.setItem('docket:deleted', JSON.stringify(state.deletedLectureIds||[]));
+}
+
+let state = loadState();
+let ui = {
+  activeCourse: state.courses[0]?.id || null,
+  search: '',
+  showUpload: false,
+  showSettings: false,
+  openLecture: null, // lecture id
+};
+
+let localTranscriberPromise = null; // cache the loaded pipeline
+
+/* ============ RENDER ============ */
+function render(){
+  document.querySelectorAll('.overlay').forEach(el => el.remove());
+  const app = document.getElementById('app');
+  app.innerHTML = `
+    ${renderSidebar()}
+    ${renderMain()}
+  `;
+  wireEvents();
+  if(ui.showUpload) renderUploadModal();
+  if(ui.showSettings) renderSettingsModal();
+  if(ui.openLecture) renderDetailModal();
+}
+
+function renderSidebar(){
+  return `
+  <div class="sidebar">
+    <div class="brand">
+      <div class="display">The Docket</div>
+      <div class="mono">Lecture Record &amp; Brief</div>
+    </div>
+    ${state.courses.map(c => {
+      const count = state.lectures.filter(l => l.courseId === c.id).length;
+      return `<div class="course-tab ${ui.activeCourse===c.id?'active':''}" data-course="${c.id}">
+        <span class="name">${escapeHtml(c.name)}</span>
+        <span class="count">${count} ${count===1?'entry':'entries'}</span>
+      </div>`;
+    }).join('')}
+    <div class="add-course" id="addCourseBtn">+ add course</div>
+    <div class="sidebar-foot">
+      <div class="settings-btn" id="openSettings">&#9881; Settings</div>
+    </div>
+  </div>`;
+}
+
+function renderMain(){
+  const course = state.courses.find(c => c.id === ui.activeCourse);
+  const q = ui.search.trim().toLowerCase();
+  let lectures = state.lectures.filter(l => l.courseId === ui.activeCourse);
+  if(q){
+    lectures = state.lectures.filter(l =>
+      (l.title||'').toLowerCase().includes(q) ||
+      (l.transcript||'').toLowerCase().includes(q) ||
+      (l.summary||'').toLowerCase().includes(q)
+    );
+  }
+  lectures = lectures.slice().sort((a,b) => (b.date||'').localeCompare(a.date||''));
+
+  return `
+  <div class="main">
+    <div class="topbar">
+      <div>
+        <h1>${q ? 'Search results' : escapeHtml(course ? course.name : 'All courses')}</h1>
+        <div class="sub">${q ? escapeHtml(ui.search) : (state.settings.mode==='local' ? 'Local transcription mode' : 'Cloud transcription mode')}</div>
+      </div>
+      <div style="display:flex;gap:10px;align-items:center;">
+        <div class="searchwrap">
+          <span class="icon">&#9906;</span>
+          <input type="text" id="searchInput" placeholder="Search all transcripts..." value="${escapeAttr(ui.search)}" />
+        </div>
+        ${state.settings.githubToken ? `<button class="btn ghost" id="quickSyncBtn" title="${state.settings.lastSync ? 'Last synced ' + new Date(state.settings.lastSync).toLocaleString() : 'Not synced yet'}">&#8635; Sync</button>` : ''}
+        ${ui.activeCourse && !q ? `<button class="btn ghost" id="openDictionary">Dictionary</button>` : ''}
+        ${ui.activeCourse && !q ? `<button class="btn ghost" id="openCaseLaw">Case Law</button>` : ''}
+        ${ui.activeCourse && !q ? `<button class="btn ghost" id="openTodos">To-Dos</button>` : ''}
+        <button class="btn" id="newLectureBtn">+ New Recording</button>
+      </div>
+    </div>
+    <div class="content">
+      ${lectures.length === 0 ? `
+        <div class="empty">
+          <div class="display">${q ? 'Nothing found' : 'No entries yet'}</div>
+          <div>${q ? 'Try a different search term.' : 'Upload a class recording to begin the docket for this course.'}</div>
+        </div>
+      ` : `
+        <div class="docket-list">
+          ${lectures.map(l => renderEntry(l, q)).join('')}
+        </div>
+      `}
+    </div>
+  </div>`;
+}
+
+function docketNumber(lecture){
+  const course = state.courses.find(c=>c.id===lecture.courseId);
+  const prefix = (course ? course.name : 'GEN').split(/\s+/).map(w=>w[0]).join('').toUpperCase().slice(0,3);
+  const siblings = state.lectures.filter(l=>l.courseId===lecture.courseId).slice().sort((a,b)=>(a.createdAt||0)-(b.createdAt||0));
+  const idx = siblings.findIndex(l=>l.id===lecture.id) + 1;
+  return `${prefix}-${String(idx).padStart(3,'0')}`;
+}
+
+function renderEntry(l, q){
+  const statusClass = l.status === 'ready' ? 'ready' : (l.status === 'error' ? 'error' : 'working');
+  const statusText = l.status === 'ready' ? 'Transcribed' : (l.status === 'error' ? 'Failed' : 'Processing');
+  return `
+  <div class="entry" data-lecture="${l.id}">
+    <div>
+      <div class="num">${docketNumber(l)}${q ? ' &middot; ' + escapeHtml(state.courses.find(c=>c.id===l.courseId)?.name || '') : ''}</div>
+      <div class="title">${escapeHtml(l.title || 'Untitled recording')}</div>
+      <div class="meta">${l.date || ''}${l.durationLabel ? ' &middot; ' + l.durationLabel : ''}</div>
+    </div>
+    <div class="status ${statusClass}">${statusText}</div>
+  </div>`;
+}
+
+/* ============ MODALS ============ */
+function renderUploadModal(){
+  const overlay = document.createElement('div');
+  overlay.className = 'overlay';
+  overlay.id = 'uploadOverlay';
+  overlay.innerHTML = `
+    <div class="modal">
+      <div class="modal-head">
+        <h2>New Recording</h2>
+        <button class="modal-close" id="closeUpload">&times;</button>
+      </div>
+      <div class="modal-body">
+        <label>Course</label>
+        <select id="fCourse">
+          ${state.courses.map(c=>`<option value="${c.id}" ${c.id===ui.activeCourse?'selected':''}>${escapeHtml(c.name)}</option>`).join('')}
+        </select>
+
+        <label>Title</label>
+        <input type="text" id="fTitle" placeholder="e.g. Duty of Care &mdash; Palsgraf" />
+
+        <label>Date</label>
+        <input type="date" id="fDate" value="${new Date().toISOString().slice(0,10)}" />
+
+        <label>Video or audio file</label>
+        <div class="filepick" id="filePick">Click to choose a file, or drag one here — video or audio (MP4, MOV, MP3, M4A, WAV, AAC, etc.)</div>
+        <input type="file" id="fFile" accept="video/*,audio/*,.mp4,.mov,.m4v,.webm,.mp3,.m4a,.wav,.aac,.ogg,.flac" style="display:none" />
+
+        <label>Transcription mode</label>
+        <div class="mode-row">
+          <div class="mode-opt ${state.settings.mode==='local'?'sel':''}" data-mode="local">Local (free, in-browser)</div>
+          <div class="mode-opt ${state.settings.mode==='cloud'?'sel':''}" data-mode="cloud">Cloud (Deepgram key)</div>
+        </div>
+        <div class="help" id="modeHelp"></div>
+
+        <div id="uploadProgress"></div>
+        <div id="uploadError"></div>
+      </div>
+      <div class="modal-foot">
+        <button class="btn ghost" id="cancelUpload">Cancel</button>
+        <button class="btn" id="startTranscribe">Transcribe</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+
+  document.getElementById('closeUpload').onclick = () => { ui.showUpload = false; overlay.remove(); };
+  document.getElementById('cancelUpload').onclick = () => { ui.showUpload = false; overlay.remove(); };
+  overlay.addEventListener('click', (e)=>{ if(e.target===overlay){ ui.showUpload=false; overlay.remove(); }});
+
+  const filePick = document.getElementById('filePick');
+  const fFile = document.getElementById('fFile');
+  filePick.onclick = () => fFile.click();
+  fFile.onchange = () => {
+    if(fFile.files[0]){
+      filePick.textContent = fFile.files[0].name;
+      filePick.classList.add('has-file');
+    }
+  };
+  filePick.addEventListener('dragover', (e) => { e.preventDefault(); filePick.style.borderColor = 'var(--oxblood)'; });
+  filePick.addEventListener('dragleave', () => { filePick.style.borderColor = ''; });
+  filePick.addEventListener('drop', (e) => {
+    e.preventDefault();
+    filePick.style.borderColor = '';
+    const dropped = e.dataTransfer.files[0];
+    if(dropped){
+      const dt = new DataTransfer();
+      dt.items.add(dropped);
+      fFile.files = dt.files;
+      filePick.textContent = dropped.name;
+      filePick.classList.add('has-file');
+    }
+  });
+
+  let chosenMode = state.settings.mode;
+  updateModeHelp();
+  overlay.querySelectorAll('.mode-opt').forEach(el=>{
+    el.onclick = () => {
+      chosenMode = el.dataset.mode;
+      overlay.querySelectorAll('.mode-opt').forEach(o=>o.classList.remove('sel'));
+      el.classList.add('sel');
+      updateModeHelp();
+    };
+  });
+  function updateModeHelp(){
+    const helpEl = document.getElementById('modeHelp');
+    if(chosenMode==='local'){
+      helpEl.textContent = 'Runs entirely in your browser. First use downloads a ~150MB speech model. Slower, but free and fully private. Needs a WebGPU-capable browser (recent Chrome or Edge) for reasonable speed.';
+    } else {
+      helpEl.textContent = state.settings.deepgramKey
+        ? 'Sends audio to Deepgram using your saved API key. Faster and more accurate.'
+        : 'No Deepgram key saved yet — add one in Settings first.';
+    }
+  }
+
+  document.getElementById('startTranscribe').onclick = async () => {
+    const courseId = document.getElementById('fCourse').value;
+    const title = document.getElementById('fTitle').value.trim() || 'Untitled recording';
+    const date = document.getElementById('fDate').value;
+    const file = fFile.files[0];
+    const errEl = document.getElementById('uploadError');
+    const progEl = document.getElementById('uploadProgress');
+    errEl.innerHTML = '';
+
+    if(!file){ errEl.innerHTML = `<div class="err-box">Choose a file first.</div>`; return; }
+    if(chosenMode==='cloud' && !state.settings.deepgramKey){ errEl.innerHTML = `<div class="err-box">Add a Deepgram API key in Settings, or switch to Local mode.</div>`; return; }
+
+    document.getElementById('startTranscribe').disabled = true;
+    document.getElementById('cancelUpload').disabled = true;
+
+    const lecture = {
+      id: 'l_' + Date.now() + '_' + Math.random().toString(36).slice(2,7),
+      courseId, title, date,
+      status: 'working',
+      transcript: '', keyPoints: '', caseLaw: [], todos: [], keyTerms: [],
+      durationLabel: '',
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+    };
+    state.lectures.push(lecture);
+    saveState();
+
+    try{
+      setProgress(progEl, 'Decoding audio track...');
+      const { float32, sampleRate, durationSec } = await decodeAndResample(file);
+      lecture.durationLabel = formatDuration(durationSec);
+
+      let transcript;
+      if(chosenMode==='local'){
+        setProgress(progEl, 'Loading local speech model (first run may take a minute)...');
+        transcript = await localTranscribe(float32, sampleRate, (msg)=>setProgress(progEl, msg));
+      } else {
+        setProgress(progEl, 'Uploading to Deepgram...');
+        const wavBlob = encodeWAV(float32, sampleRate);
+        transcript = await cloudTranscribe(wavBlob, state.settings.deepgramKey);
+      }
+
+      lecture.transcript = transcript;
+      lecture.status = 'ready';
+      lecture.updatedAt = Date.now();
+      saveState();
+
+      if(state.settings.anthropicKey && transcript && transcript.trim()){
+        setProgress(progEl, 'Generating notes, case law citations, and to-dos...');
+        try{
+          const courseName = state.courses.find(c=>c.id===courseId)?.name || '';
+          const docs = await generateDocs(transcript, state.settings.anthropicKey, courseName, date);
+          lecture.keyPoints = docs.keyPoints;
+          lecture.caseLaw = docs.caseLaw;
+          lecture.todos = docs.todos;
+          lecture.keyTerms = docs.keyTerms;
+          lecture.updatedAt = Date.now();
+          saveState();
+        }catch(e){
+          console.error(e);
+          // doc generation failure shouldn't block the transcript being saved
+        }
+      }
+
+      if(state.settings.githubToken){
+        setProgress(progEl, 'Syncing to your other devices...');
+        try{ await syncNow(); }catch(e){ console.error('Sync failed', e); }
+      }
+
+      ui.showUpload = false;
+      overlay.remove();
+      ui.activeCourse = courseId;
+      ui.openLecture = lecture.id;
+      render();
+    }catch(e){
+      console.error(e);
+      lecture.status = 'error';
+      lecture.updatedAt = Date.now();
+      saveState();
+      errEl.innerHTML = `<div class="err-box">${escapeHtml(e.message || 'Something went wrong during transcription.')}</div>`;
+      document.getElementById('startTranscribe').disabled = false;
+      document.getElementById('cancelUpload').disabled = false;
+      progEl.innerHTML = '';
+    }
+  };
+}
+
+function setProgress(el, msg){
+  el.innerHTML = `<div class="progress"><span class="dot"></span>${escapeHtml(msg)}</div>`;
+}
+
+function renderSettingsModal(){
+  const overlay = document.createElement('div');
+  overlay.className = 'overlay';
+  overlay.innerHTML = `
+    <div class="modal">
+      <div class="modal-head">
+        <h2>Settings</h2>
+        <button class="modal-close" id="closeSettings">&times;</button>
+      </div>
+      <div class="modal-body">
+        <label>Default transcription mode</label>
+        <div class="mode-row">
+          <div class="mode-opt ${state.settings.mode==='local'?'sel':''}" data-mode="local">Local (free)</div>
+          <div class="mode-opt ${state.settings.mode==='cloud'?'sel':''}" data-mode="cloud">Cloud (Deepgram)</div>
+        </div>
+
+        <label>Deepgram API key <span style="text-transform:none;">(optional &mdash; for cloud mode)</span></label>
+        <input type="password" id="sDeepgram" value="${escapeAttr(state.settings.deepgramKey)}" placeholder="dg_..." />
+        <div class="help">Get a free key with $200 starting credit at deepgram.com. Stored only in this browser.</div>
+
+        <label>Anthropic API key <span style="text-transform:none;">(optional &mdash; for auto-generated notes)</span></label>
+        <input type="password" id="sAnthropic" value="${escapeAttr(state.settings.anthropicKey)}" placeholder="sk-ant-..." />
+        <div class="help">Get a key at console.anthropic.com. Without this, transcripts still save &mdash; you just won't get automatic bullet-point notes. Stored only in this browser.</div>
+
+        <label style="margin-top:24px;border-top:1px solid var(--rule);padding-top:18px;">Sync across devices</label>
+        <div class="help" style="margin-top:-2px;">Uses a private GitHub Gist to sync your courses and transcripts between desktop and phone.</div>
+
+        <label>GitHub personal access token</label>
+        <input type="password" id="sGithubToken" value="${escapeAttr(state.settings.githubToken)}" placeholder="ghp_..." />
+        <div class="help">Create one at github.com &rarr; Settings &rarr; Developer settings &rarr; Personal access tokens &rarr; Tokens (classic) &rarr; check the <b>gist</b> scope only. Use the <b>same token on every device</b>.</div>
+
+        <label>Gist ID</label>
+        <input type="text" id="sGistId" value="${escapeAttr(state.settings.gistId)}" placeholder="leave blank on your first device &mdash; one will be created" />
+        <div class="help">On your first device, leave this blank and hit Sync &mdash; it'll create a Gist and fill this in. Copy that ID into this same field on your other device so they sync to the same place.</div>
+
+        <div id="syncStatus" class="help" style="margin-top:10px;">${state.settings.lastSync ? 'Last synced ' + new Date(state.settings.lastSync).toLocaleString() : 'Not synced yet.'}</div>
+        <div id="syncError"></div>
+        <button class="btn ghost" id="syncNowBtn" style="margin-top:10px;">Sync now</button>
+      </div>
+      <div class="modal-foot">
+        <button class="btn ghost" id="closeSettings2">Close</button>
+        <button class="btn" id="saveSettings">Save</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  let mode = state.settings.mode;
+  overlay.querySelectorAll('.mode-opt').forEach(el=>{
+    el.onclick = () => {
+      mode = el.dataset.mode;
+      overlay.querySelectorAll('.mode-opt').forEach(o=>o.classList.remove('sel'));
+      el.classList.add('sel');
+    };
+  });
+  const close = () => { ui.showSettings = false; overlay.remove(); };
+  document.getElementById('closeSettings').onclick = close;
+  document.getElementById('closeSettings2').onclick = close;
+  overlay.addEventListener('click', (e)=>{ if(e.target===overlay) close(); });
+  document.getElementById('saveSettings').onclick = () => {
+    state.settings.mode = mode;
+    state.settings.deepgramKey = document.getElementById('sDeepgram').value.trim();
+    state.settings.anthropicKey = document.getElementById('sAnthropic').value.trim();
+    state.settings.githubToken = document.getElementById('sGithubToken').value.trim();
+    state.settings.gistId = document.getElementById('sGistId').value.trim();
+    saveState();
+    close();
+    render();
+  };
+  document.getElementById('syncNowBtn').onclick = async () => {
+    const btn = document.getElementById('syncNowBtn');
+    const statusEl = document.getElementById('syncStatus');
+    const errEl = document.getElementById('syncError');
+    errEl.innerHTML = '';
+    state.settings.githubToken = document.getElementById('sGithubToken').value.trim();
+    state.settings.gistId = document.getElementById('sGistId').value.trim();
+    if(!state.settings.githubToken){
+      errEl.innerHTML = `<div class="err-box">Add a GitHub token first.</div>`;
+      return;
+    }
+    btn.disabled = true;
+    btn.textContent = 'Syncing...';
+    try{
+      await syncNow();
+      document.getElementById('sGistId').value = state.settings.gistId;
+      statusEl.textContent = 'Last synced ' + new Date(state.settings.lastSync).toLocaleString() + (state.settings.gistId ? ' — Gist ID: ' + state.settings.gistId : '');
+    }catch(e){
+      errEl.innerHTML = `<div class="err-box">${escapeHtml(e.message)}</div>`;
+    }
+    btn.disabled = false;
+    btn.textContent = 'Sync now';
+  };
+}
+
+function renderDetailModal(){
+  const lecture = state.lectures.find(l=>l.id===ui.openLecture);
+  if(!lecture) { ui.openLecture = null; return; }
+  const course = state.courses.find(c=>c.id===lecture.courseId);
+  const hasDocs = lecture.keyPoints || (lecture.caseLaw && lecture.caseLaw.length) || (lecture.todos && lecture.todos.length);
+  const overlay = document.createElement('div');
+  overlay.className = 'overlay';
+  overlay.innerHTML = `
+    <div class="modal wide">
+      <div class="modal-head">
+        <h2>${escapeHtml(lecture.title)}</h2>
+        <button class="modal-close" id="closeDetail">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="detail-meta">${docketNumber(lecture)} &middot; ${escapeHtml(course?course.name:'')} &middot; ${lecture.date||''}${lecture.durationLabel ? ' &middot; ' + lecture.durationLabel : ''}</div>
+
+        ${!hasDocs ? `
+          <div class="help">${state.settings.anthropicKey ? 'Documents not generated yet.' : 'Add an Anthropic API key in Settings to auto-generate key points, case law, key terms, and to-dos for this recording.'}</div>
+          ${state.settings.anthropicKey && lecture.transcript ? `<button class="btn ghost" id="genNotesBtn" style="margin-top:10px;">Generate documents</button>` : ''}
+        ` : (state.settings.anthropicKey && lecture.transcript ? `
+          <div style="margin-bottom:10px;">
+            <button class="btn ghost" id="genNotesBtn">Regenerate documents</button>
+            <span class="help" style="display:inline;">&nbsp;Use this to backfill new sections (like key terms) on older recordings.</span>
+          </div>
+        ` : '')}
+
+        ${lecture.keyPoints ? `
+          <div class="section-label">1. Key Information</div>
+          <div class="summary-body">${escapeHtml(lecture.keyPoints)}</div>
+        ` : ''}
+
+        ${lecture.caseLaw && lecture.caseLaw.length ? `
+          <div class="section-label">2. Case Law Discussed</div>
+          ${lecture.caseLaw.map(c => `
+            <div style="margin-bottom:16px;">
+              <div style="font-weight:600;font-size:15px;">${escapeHtml(c.name||'')}</div>
+              ${c.citation ? `<div class="mono" style="font-size:11.5px;color:var(--brass);margin:2px 0 6px;">${escapeHtml(c.citation)}</div>` : `<div class="mono" style="font-size:11px;color:var(--ink-soft);margin:2px 0 6px;">Citation not verified — search manually.</div>`}
+              <div class="summary-body" style="font-size:14.5px;margin:4px 0 6px;">${escapeHtml(c.description||'')}</div>
+              ${c.quote ? `<div class="transcript-body" style="max-height:none;font-style:italic;">&ldquo;${escapeHtml(c.quote)}&rdquo;</div>` : ''}
+            </div>
+          `).join('')}
+        ` : (hasDocs ? `<div class="section-label">2. Case Law Discussed</div><div class="help">No case law identified in this recording.</div>` : '')}
+
+        ${lecture.todos && lecture.todos.length ? `
+          <div class="section-label">3. Action Items / To-Dos</div>
+          ${lecture.todos.map(t => `
+            <label style="display:flex;align-items:flex-start;gap:8px;margin-bottom:6px;cursor:pointer;">
+              <input type="checkbox" class="todo-check" data-todo="${t.id}" ${t.done?'checked':''} style="margin-top:4px;" />
+              <span style="${t.done ? 'text-decoration:line-through;color:var(--ink-soft);' : ''}font-size:14.5px;">${escapeHtml(t.text)}${t.dueDate ? ` <span class="mono" style="font-size:11px;color:var(--oxblood);">— due ${escapeHtml(t.dueDate)}</span>` : ''}</span>
+            </label>
+          `).join('')}
+        ` : (hasDocs ? `<div class="section-label">3. Action Items / To-Dos</div><div class="help">No action items identified.</div>` : '')}
+
+        ${lecture.keyTerms && lecture.keyTerms.length ? `
+          <div class="section-label">4. Key Terms &amp; Definitions</div>
+          ${lecture.keyTerms.map(t => `
+            <div style="margin-bottom:10px;">
+              <div style="font-weight:600;font-size:14.5px;">${escapeHtml(t.term||'')}</div>
+              <div class="summary-body" style="font-size:14px;">${escapeHtml(t.definition||'')}</div>
+            </div>
+          `).join('')}
+        ` : (hasDocs ? `<div class="section-label">4. Key Terms &amp; Definitions</div><div class="help">No key terms identified in this recording.</div>` : '')}
+
+        <div class="section-label">5. Full Transcript</div>
+        <div class="transcript-body">${escapeHtml(lecture.transcript || '(empty)')}</div>
+      </div>
+      <div class="modal-foot">
+        <button class="btn ghost" id="deleteLecture">Delete</button>
+        <button class="btn ghost" id="exportLecture">Export all (5 files)</button>
+        <button class="btn" id="closeDetail2">Close</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  const close = () => { ui.openLecture = null; overlay.remove(); };
+  document.getElementById('closeDetail').onclick = close;
+  document.getElementById('closeDetail2').onclick = close;
+  overlay.addEventListener('click', (e)=>{ if(e.target===overlay) close(); });
+
+  document.getElementById('exportLecture').onclick = () => {
+    const base = (lecture.title||'lecture').replace(/[^a-z0-9]+/gi,'-');
+    const caseLawText = (lecture.caseLaw||[]).map(c => `${c.name}\n${c.citation ? 'Citation: ' + c.citation : 'Citation not verified'}\n${c.description}\n\nQuote: "${c.quote||''}"`).join('\n\n---\n\n') || 'No case law identified.';
+    const keyTermsText = (lecture.keyTerms||[]).map(t => `${t.term}\n${t.definition}`).join('\n\n---\n\n') || 'No key terms identified.';
+    const todosText = (lecture.todos||[]).map(t => `[${t.done?'x':' '}] ${t.text}${t.dueDate ? ' (due ' + t.dueDate + ')' : ''}`).join('\n') || 'No action items identified.';
+    const files = [
+      { suffix: 'transcript', content: lecture.transcript || '(empty)' },
+      { suffix: 'key-points', content: lecture.keyPoints || '(none)' },
+      { suffix: 'case-law', content: caseLawText },
+      { suffix: 'key-terms', content: keyTermsText },
+      { suffix: 'todos', content: todosText },
+    ];
+    files.forEach((f, i) => {
+      setTimeout(() => {
+        const blob = new Blob([`${lecture.title} — ${course?course.name:''} — ${lecture.date||''}\n\n${f.content}`], {type:'text/plain'});
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `${base}-${f.suffix}.txt`;
+        a.click();
+      }, i * 300);
+    });
+  };
+  overlay.querySelectorAll('.todo-check').forEach(cb => {
+    cb.onchange = async () => {
+      const todo = (lecture.todos||[]).find(t => t.id === cb.dataset.todo);
+      if(todo){
+        todo.done = cb.checked;
+        lecture.updatedAt = Date.now();
+        saveState();
+        render();
+        if(state.settings.githubToken){ try{ await syncNow(); }catch(e){ console.error(e); } }
+      }
+    };
+  });
+  document.getElementById('deleteLecture').onclick = async () => {
+    if(confirm('Delete this recording and its transcript? This cannot be undone.')){
+      state.lectures = state.lectures.filter(l=>l.id!==lecture.id);
+      state.deletedLectureIds = state.deletedLectureIds || [];
+      state.deletedLectureIds.push(lecture.id);
+      saveState();
+      close();
+      render();
+      if(state.settings.githubToken){ try{ await syncNow(); render(); }catch(e){ console.error(e); } }
+    }
+  };
+  const genBtn = document.getElementById('genNotesBtn');
+  if(genBtn){
+    genBtn.onclick = async () => {
+      genBtn.disabled = true;
+      genBtn.textContent = 'Generating...';
+      try{
+        const docs = await generateDocs(lecture.transcript, state.settings.anthropicKey, course?course.name:'', lecture.date);
+        lecture.keyPoints = docs.keyPoints;
+        lecture.caseLaw = docs.caseLaw;
+        lecture.todos = docs.todos;
+        lecture.keyTerms = docs.keyTerms;
+        lecture.updatedAt = Date.now();
+        saveState();
+        render();
+        if(state.settings.githubToken){ try{ await syncNow(); }catch(e){ console.error(e); } }
+      }catch(e){
+        alert('Could not generate documents: ' + e.message);
+        genBtn.disabled = false;
+        genBtn.textContent = 'Generate documents';
+      }
+    };
+  }
+}
+
+function buildDictionary(courseId){
+  const map = {};
+  const lectures = state.lectures
+    .filter(l => l.courseId === courseId)
+    .slice()
+    .sort((a,b) => (a.date||'').localeCompare(b.date||'') || (a.createdAt||0)-(b.createdAt||0));
+  lectures.forEach(l => {
+    (l.keyTerms||[]).forEach(t => {
+      if(!t.term || !t.term.trim()) return;
+      const key = t.term.trim().toLowerCase();
+      if(!map[key]){
+        map[key] = { term: t.term.trim(), definition: t.definition||'', sources: [] };
+      }
+      map[key].sources.push({ lectureId: l.id, title: l.title, date: l.date });
+    });
+  });
+  return Object.values(map).sort((a,b) => a.term.localeCompare(b.term));
+}
+
+function renderDictionaryModal(){
+  const course = state.courses.find(c=>c.id===ui.activeCourse);
+  const dict = buildDictionary(ui.activeCourse);
+  const overlay = document.createElement('div');
+  overlay.className = 'overlay';
+  overlay.innerHTML = `
+    <div class="modal wide">
+      <div class="modal-head">
+        <h2>${escapeHtml(course?course.name:'')} Dictionary</h2>
+        <button class="modal-close" id="closeDict">&times;</button>
+      </div>
+      <div class="modal-body">
+        ${dict.length === 0 ? `
+          <div class="help">No key terms recorded for this course yet. They'll collect here automatically as you transcribe lectures.</div>
+        ` : `
+          <div class="help" style="margin-bottom:16px;">${dict.length} term${dict.length===1?'':'s'}, built automatically from every lecture in this course &mdash; each term appears once even if discussed multiple times.</div>
+          ${dict.map(d => `
+            <div style="margin-bottom:16px;border-bottom:1px solid var(--rule);padding-bottom:14px;">
+              <div style="font-weight:600;font-size:15.5px;">${escapeHtml(d.term)}</div>
+              <div class="summary-body" style="font-size:14.5px;margin:4px 0 6px;">${escapeHtml(d.definition)}</div>
+              <div class="mono" style="font-size:10.5px;color:var(--ink-soft);">Discussed in: ${d.sources.map(s=>escapeHtml(s.title||'Untitled')).join(', ')}</div>
+            </div>
+          `).join('')}
+        `}
+      </div>
+      <div class="modal-foot">
+        ${dict.length ? `<button class="btn ghost" id="exportDict">Export .txt</button>` : ''}
+        <button class="btn" id="closeDict2">Close</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  const close = () => overlay.remove();
+  document.getElementById('closeDict').onclick = close;
+  document.getElementById('closeDict2').onclick = close;
+  overlay.addEventListener('click', (e)=>{ if(e.target===overlay) close(); });
+  const exportBtn = document.getElementById('exportDict');
+  if(exportBtn){
+    exportBtn.onclick = () => {
+      const text = `${course?course.name:''} — Dictionary\n\n` + dict.map(d => `${d.term}\n${d.definition}\n(Discussed in: ${d.sources.map(s=>s.title||'Untitled').join(', ')})`).join('\n\n---\n\n');
+      const blob = new Blob([text], {type:'text/plain'});
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `${(course?course.name:'course').replace(/[^a-z0-9]+/gi,'-')}-dictionary.txt`;
+      a.click();
+    };
+  }
+}
+
+/* ============ CASE LAW INDEX (course-wide) ============ */
+function buildCaseLawIndex(courseId){
+  const map = {};
+  const lectures = state.lectures
+    .filter(l => l.courseId === courseId)
+    .slice()
+    .sort((a,b) => (a.date||'').localeCompare(b.date||'') || (a.createdAt||0)-(b.createdAt||0));
+  lectures.forEach(l => {
+    (l.caseLaw||[]).forEach(c => {
+      if(!c.name || !c.name.trim()) return;
+      const key = c.name.trim().toLowerCase();
+      if(!map[key]){
+        map[key] = { name: c.name.trim(), description: c.description||'', citation: c.citation||null, quote: c.quote||'', sources: [] };
+      }
+      if(!map[key].citation && c.citation) map[key].citation = c.citation;
+      map[key].sources.push({ lectureId: l.id, title: l.title, date: l.date });
+    });
+  });
+  return Object.values(map).sort((a,b) => a.name.localeCompare(b.name));
+}
+
+function renderCaseLawModal(){
+  const course = state.courses.find(c=>c.id===ui.activeCourse);
+  const index = buildCaseLawIndex(ui.activeCourse);
+  const overlay = document.createElement('div');
+  overlay.className = 'overlay';
+  overlay.innerHTML = `
+    <div class="modal wide">
+      <div class="modal-head">
+        <h2>${escapeHtml(course?course.name:'')} Case Law</h2>
+        <button class="modal-close" id="closeCL">&times;</button>
+      </div>
+      <div class="modal-body">
+        ${index.length === 0 ? `
+          <div class="help">No case law recorded for this course yet. They'll collect here automatically as you transcribe lectures.</div>
+        ` : `
+          <div class="help" style="margin-bottom:16px;">${index.length} case${index.length===1?'':'s'} discussed across this course &mdash; each appears once even if covered in multiple lectures. Citations are Bluebook-style, found via web search &mdash; verify before citing formally.</div>
+          ${index.map(c => `
+            <div style="margin-bottom:18px;border-bottom:1px solid var(--rule);padding-bottom:14px;">
+              <div style="font-weight:600;font-size:15.5px;">${escapeHtml(c.name)}</div>
+              ${c.citation ? `<div class="mono" style="font-size:11.5px;color:var(--brass);margin:2px 0 6px;">${escapeHtml(c.citation)}</div>` : `<div class="mono" style="font-size:11px;color:var(--ink-soft);margin:2px 0 6px;">Citation not verified — search manually.</div>`}
+              <div class="summary-body" style="font-size:14.5px;margin:4px 0 6px;">${escapeHtml(c.description)}</div>
+              ${c.quote ? `<div class="transcript-body" style="max-height:none;font-style:italic;">&ldquo;${escapeHtml(c.quote)}&rdquo;</div>` : ''}
+              <div class="mono" style="font-size:10.5px;color:var(--ink-soft);margin-top:6px;">Discussed in: ${c.sources.map(s=>escapeHtml(s.title||'Untitled')).join(', ')}</div>
+            </div>
+          `).join('')}
+        `}
+      </div>
+      <div class="modal-foot">
+        ${index.length ? `<button class="btn ghost" id="exportCL">Export .txt</button>` : ''}
+        <button class="btn" id="closeCL2">Close</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  const close = () => overlay.remove();
+  document.getElementById('closeCL').onclick = close;
+  document.getElementById('closeCL2').onclick = close;
+  overlay.addEventListener('click', (e)=>{ if(e.target===overlay) close(); });
+  const exportBtn = document.getElementById('exportCL');
+  if(exportBtn){
+    exportBtn.onclick = () => {
+      const text = `${course?course.name:''} — Case Law\n\n` + index.map(c =>
+        `${c.name}\n${c.citation ? 'Citation: ' + c.citation : 'Citation not verified'}\n${c.description}\n\nQuote: "${c.quote}"\n(Discussed in: ${c.sources.map(s=>s.title||'Untitled').join(', ')})`
+      ).join('\n\n---\n\n');
+      const blob = new Blob([text], {type:'text/plain'});
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `${(course?course.name:'course').replace(/[^a-z0-9]+/gi,'-')}-case-law.txt`;
+      a.click();
+    };
+  }
+}
+
+/* ============ TO-DO BOARD (course-wide) ============ */
+function buildTodoBoard(courseId){
+  const items = [];
+  state.lectures
+    .filter(l => l.courseId === courseId)
+    .forEach(l => {
+      (l.todos||[]).forEach(t => {
+        items.push({ ...t, lectureId: l.id, lectureTitle: l.title, lectureDate: l.date });
+      });
+    });
+  items.sort((a,b) => {
+    if(a.done !== b.done) return a.done ? 1 : -1;
+    if(a.dueDate && b.dueDate) return a.dueDate.localeCompare(b.dueDate);
+    if(a.dueDate) return -1;
+    if(b.dueDate) return 1;
+    return (a.lectureDate||'').localeCompare(b.lectureDate||'');
+  });
+  return items;
+}
+
+function renderTodosModal(){
+  const course = state.courses.find(c=>c.id===ui.activeCourse);
+  const items = buildTodoBoard(ui.activeCourse);
+  const overlay = document.createElement('div');
+  overlay.className = 'overlay';
+  overlay.innerHTML = `
+    <div class="modal wide">
+      <div class="modal-head">
+        <h2>${escapeHtml(course?course.name:'')} To-Dos</h2>
+        <button class="modal-close" id="closeTodo">&times;</button>
+      </div>
+      <div class="modal-body">
+        ${items.length === 0 ? `
+          <div class="help">No action items recorded for this course yet.</div>
+        ` : items.map(t => `
+          <label style="display:flex;align-items:flex-start;gap:10px;margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid var(--rule);cursor:pointer;">
+            <input type="checkbox" class="board-todo-check" data-lecture="${t.lectureId}" data-todo="${t.id}" ${t.done?'checked':''} style="margin-top:4px;" />
+            <span style="flex:1;">
+              <span style="${t.done ? 'text-decoration:line-through;color:var(--ink-soft);' : ''}font-size:15px;">${escapeHtml(t.text)}</span>
+              <span class="mono" style="display:block;font-size:11px;color:${t.dueDate ? 'var(--oxblood)' : 'var(--ink-soft)'};margin-top:2px;">${t.dueDate ? 'Due ' + escapeHtml(t.dueDate) + ' &middot; ' : ''}From: ${escapeHtml(t.lectureTitle||'Untitled')}</span>
+            </span>
+          </label>
+        `).join('')}
+      </div>
+      <div class="modal-foot">
+        <button class="btn" id="closeTodo2">Close</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  const close = () => overlay.remove();
+  document.getElementById('closeTodo').onclick = close;
+  document.getElementById('closeTodo2').onclick = close;
+  overlay.addEventListener('click', (e)=>{ if(e.target===overlay) close(); });
+  overlay.querySelectorAll('.board-todo-check').forEach(cb => {
+    cb.onchange = async () => {
+      const lecture = state.lectures.find(l => l.id === cb.dataset.lecture);
+      const todo = lecture && (lecture.todos||[]).find(t => t.id === cb.dataset.todo);
+      if(todo){
+        todo.done = cb.checked;
+        lecture.updatedAt = Date.now();
+        saveState();
+        if(state.settings.githubToken){ try{ await syncNow(); }catch(e){ console.error(e); } }
+      }
+    };
+  });
+}
+
+/* ============ EVENTS ============ */
+function wireEvents(){
+  document.querySelectorAll('.course-tab').forEach(el=>{
+    el.onclick = () => { ui.activeCourse = el.dataset.course; ui.search=''; render(); };
+  });
+  const addBtn = document.getElementById('addCourseBtn');
+  if(addBtn) addBtn.onclick = () => {
+    const name = prompt('Course name:');
+    if(name && name.trim()){
+      const id = 'c_' + Date.now();
+      state.courses.push({ id, name: name.trim() });
+      ui.activeCourse = id;
+      saveState();
+      render();
+    }
+  };
+  const openSettings = document.getElementById('openSettings');
+  if(openSettings) openSettings.onclick = () => { ui.showSettings = true; render(); };
+  const newLectureBtn = document.getElementById('newLectureBtn');
+  if(newLectureBtn) newLectureBtn.onclick = () => { ui.showUpload = true; render(); };
+  const openDictionary = document.getElementById('openDictionary');
+  if(openDictionary) openDictionary.onclick = () => { renderDictionaryModal(); };
+  const openCaseLaw = document.getElementById('openCaseLaw');
+  if(openCaseLaw) openCaseLaw.onclick = () => { renderCaseLawModal(); };
+  const openTodos = document.getElementById('openTodos');
+  if(openTodos) openTodos.onclick = () => { renderTodosModal(); };
+  const quickSyncBtn = document.getElementById('quickSyncBtn');
+  if(quickSyncBtn) quickSyncBtn.onclick = async () => {
+    quickSyncBtn.disabled = true;
+    quickSyncBtn.textContent = 'Syncing...';
+    try{ await syncNow(); }catch(e){ alert('Sync failed: ' + e.message); }
+    render();
+  };
+  const searchInput = document.getElementById('searchInput');
+  if(searchInput){
+    searchInput.oninput = () => { ui.search = searchInput.value; render(); };
+  }
+  document.querySelectorAll('.entry').forEach(el=>{
+    el.onclick = () => { ui.openLecture = el.dataset.lecture; render(); };
+  });
+}
+
+/* ============ AUDIO PROCESSING ============ */
+async function decodeAndResample(file){
+  const arrayBuffer = await file.arrayBuffer();
+  const AC = window.AudioContext || window.webkitAudioContext;
+  const tempCtx = new AC();
+  let decoded;
+  try{
+    decoded = await tempCtx.decodeAudioData(arrayBuffer.slice(0));
+  } finally {
+    tempCtx.close();
+  }
+  const targetRate = 16000;
+  const offlineCtx = new OfflineAudioContext(1, Math.ceil(decoded.duration * targetRate), targetRate);
+  const source = offlineCtx.createBufferSource();
+  source.buffer = decoded;
+  source.connect(offlineCtx.destination);
+  source.start(0);
+  const rendered = await offlineCtx.startRendering();
+  return { float32: rendered.getChannelData(0), sampleRate: targetRate, durationSec: decoded.duration };
+}
+
+function encodeWAV(samples, sampleRate){
+  const buffer = new ArrayBuffer(44 + samples.length*2);
+  const view = new DataView(buffer);
+  function writeString(offset, str){ for(let i=0;i<str.length;i++) view.setUint8(offset+i, str.charCodeAt(i)); }
+  writeString(0,'RIFF'); view.setUint32(4, 36+samples.length*2, true); writeString(8,'WAVE');
+  writeString(12,'fmt '); view.setUint32(16,16,true); view.setUint16(20,1,true); view.setUint16(22,1,true);
+  view.setUint32(24,sampleRate,true); view.setUint32(28,sampleRate*2,true); view.setUint16(32,2,true); view.setUint16(34,16,true);
+  writeString(36,'data'); view.setUint32(40, samples.length*2, true);
+  let offset=44;
+  for(let i=0;i<samples.length;i++, offset+=2){
+    let s = Math.max(-1, Math.min(1, samples[i]));
+    view.setInt16(offset, s<0 ? s*0x8000 : s*0x7FFF, true);
+  }
+  return new Blob([view], { type:'audio/wav' });
+}
+
+function formatDuration(sec){
+  const m = Math.floor(sec/60), s = Math.round(sec%60);
+  return `${m}m ${s}s`;
+}
+
+/* ============ TRANSCRIPTION BACKENDS ============ */
+async function localTranscribe(float32, sampleRate, onProgress){
+  if(!localTranscriberPromise){
+    localTranscriberPromise = (async () => {
+      const mod = await import('https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2');
+      mod.env.allowLocalModels = false;
+      let device = 'wasm';
+      try{
+        if(navigator.gpu){ device = 'webgpu'; }
+      }catch(e){}
+      let transcriber;
+      try{
+        transcriber = await mod.pipeline('automatic-speech-recognition', 'Xenova/whisper-base', { device });
+      }catch(e){
+        transcriber = await mod.pipeline('automatic-speech-recognition', 'Xenova/whisper-base', { device: 'wasm' });
+      }
+      return transcriber;
+    })();
+  }
+  onProgress && onProgress('Loading model into memory...');
+  const transcriber = await localTranscriberPromise;
+  onProgress && onProgress('Transcribing audio locally — this can take a while for long recordings...');
+  const output = await transcriber(float32, {
+    chunk_length_s: 30,
+    stride_length_s: 5,
+    sampling_rate: sampleRate,
+  });
+  return (output && output.text) ? output.text.trim() : '';
+}
+
+async function cloudTranscribe(wavBlob, apiKey){
+  const res = await fetch('https://api.deepgram.com/v1/listen?model=nova-3&smart_format=true&punctuate=true', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Token ${apiKey}`,
+      'Content-Type': 'audio/wav'
+    },
+    body: wavBlob
+  });
+  if(!res.ok){
+    const t = await res.text().catch(()=> '');
+    throw new Error(`Deepgram error (${res.status}): ${t.slice(0,200)}`);
+  }
+  const data = await res.json();
+  return data?.results?.channels?.[0]?.alternatives?.[0]?.transcript || '';
+}
+
+async function generateDocs(transcript, apiKey, courseName, lectureDateStr){
+  const dateNote = lectureDateStr ? `This class session took place on ${lectureDateStr}. Use that as the reference date for resolving any relative dates the professor mentions (e.g. "read this for next Tuesday", "due Friday").` : `No class date was provided, so if a relative date is mentioned, set dueDate to null rather than guessing.`;
+
+  const prompt = `You are helping a first-year law student review a recorded class session for their course "${courseName}". ${dateNote}
+
+Read the transcript below and return ONLY a JSON object (no markdown fences, no preamble, no commentary) with exactly this shape:
+
+{
+  "keyPoints": "a bullet-point list of the main points, rules, and holdings discussed, each bullet on its own line starting with a dash",
+  "caseLaw": [
+    { "name": "Case Name v. Other Party", "description": "2-3 sentence plain-language description of what the case is about and the rule it stands for", "quote": "the verbatim sentence(s) the professor actually said about this case, copied exactly from the transcript, word for word", "citation": "the accurate Bluebook-style legal citation for this case, found via web search — e.g. 'Palsgraf v. Long Island R.R. Co., 248 N.Y. 339, 162 N.E. 99 (1928)'. If you cannot verify a reliable citation, set this to null." }
+  ],
+  "keyTerms": [
+    { "term": "the legal term or word of art (e.g. 'battery', 'negligence per se', 'proximate cause')", "definition": "a clear, concise definition of the term as the professor used or explained it, in plain language, 1-2 sentences" }
+  ],
+  "todos": [
+    { "text": "a single action item, assigned reading, or to-do mentioned", "dueDate": "an ISO date YYYY-MM-DD if a specific or relative deadline was mentioned and can be resolved using the reference date above, otherwise null" }
+  ]
+}
+
+Rules:
+- If no case law was discussed, "caseLaw" must be an empty array [].
+- For each case in "caseLaw", use the web_search tool to find its real, accurate legal citation. Only use web search for this purpose — do not search for anything else, and do not search for things already answerable from the transcript.
+- For "keyTerms": include any legal terminology, doctrines, elements of a claim/defense, or terms of art the professor defined, explained, or used substantively — not casual vocabulary. If none, use an empty array [].
+- For "todos": if nothing was mentioned, use an empty array [].
+- The "quote" field must be an exact, word-for-word excerpt from the transcript text below, not a paraphrase.
+- Keep keyPoints tight and practical, meant for exam review, not a full recap.
+- After any web searches, your FINAL message must be raw JSON only, matching the shape above exactly, with no other text before or after it.
+
+TRANSCRIPT:
+${transcript}`;
+
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true'
+    },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-6',
+      max_tokens: 4000,
+      messages: [{ role: 'user', content: prompt }],
+      tools: [{ type: 'web_search_20250305', name: 'web_search' }]
+    })
+  });
+  if(!res.ok){
+    const t = await res.text().catch(()=> '');
+    throw new Error(`Claude API error (${res.status}): ${t.slice(0,200)}`);
+  }
+  const data = await res.json();
+  const textBlocks = (data.content || []).filter(b => b.type === 'text').map(b => b.text || '');
+  const raw = textBlocks.length ? textBlocks[textBlocks.length - 1] : '';
+  let parsed;
+  try{
+    parsed = JSON.parse(extractJSON(raw));
+  }catch(e){
+    throw new Error('Could not parse notes response. Try again.');
+  }
+  const todos = Array.isArray(parsed.todos) ? parsed.todos.map((t, i) => ({
+    id: 't_' + Date.now() + '_' + i,
+    text: t.text || '',
+    dueDate: t.dueDate || null,
+    done: false
+  })) : [];
+  return {
+    keyPoints: parsed.keyPoints || '',
+    caseLaw: Array.isArray(parsed.caseLaw) ? parsed.caseLaw.map(c => ({ ...c, citation: c.citation || null })) : [],
+    keyTerms: Array.isArray(parsed.keyTerms) ? parsed.keyTerms : [],
+    todos
+  };
+}
+
+function extractJSON(raw){
+  const start = raw.indexOf('{');
+  if(start === -1) throw new Error('No JSON object found in model response.');
+  let depth = 0;
+  for(let i = start; i < raw.length; i++){
+    if(raw[i] === '{') depth++;
+    else if(raw[i] === '}'){
+      depth--;
+      if(depth === 0) return raw.slice(start, i + 1);
+    }
+  }
+  throw new Error('Unbalanced JSON in model response.');
+}
+
+/* ============ SYNC (GitHub Gist) ============ */
+function mergeState(local, remote){
+  const deletedIds = new Set([...(local.deletedLectureIds||[]), ...(remote.deletedLectureIds||[])]);
+
+  const courseMap = {};
+  (local.courses||[]).forEach(c=>{ courseMap[c.id]=c; });
+  (remote.courses||[]).forEach(c=>{ if(!courseMap[c.id]) courseMap[c.id]=c; });
+
+  const lectureMap = {};
+  (local.lectures||[]).forEach(l=>{ lectureMap[l.id]=l; });
+  (remote.lectures||[]).forEach(l=>{
+    const existing = lectureMap[l.id];
+    if(!existing || (l.updatedAt||0) > (existing.updatedAt||0)) lectureMap[l.id]=l;
+  });
+
+  const lectures = Object.values(lectureMap).filter(l=>!deletedIds.has(l.id));
+  return { courses: Object.values(courseMap), lectures, deletedLectureIds: Array.from(deletedIds) };
+}
+
+async function syncNow(){
+  const token = state.settings.githubToken;
+  let gistId = state.settings.gistId;
+  if(!token) throw new Error('Add a GitHub token in Settings first.');
+
+  let remoteData = null;
+  if(gistId){
+    const res = await fetch(`https://api.github.com/gists/${gistId}`, {
+      headers: { 'Authorization': `token ${token}`, 'Accept': 'application/vnd.github+json' }
+    });
+    if(res.ok){
+      const gist = await res.json();
+      const file = gist.files && gist.files['docket-data.json'];
+      if(file && file.content){
+        remoteData = JSON.parse(file.content);
+        if(remoteData) remoteData.lectures = normalizeLectures(remoteData.lectures);
+      }
+    } else if(res.status === 404){
+      gistId = null;
+    } else {
+      const t = await res.text().catch(()=> '');
+      throw new Error(`GitHub error (${res.status}): ${t.slice(0,150)}`);
+    }
+  }
+
+  const merged = remoteData
+    ? mergeState({ courses: state.courses, lectures: state.lectures, deletedLectureIds: state.deletedLectureIds||[] }, remoteData)
+    : { courses: state.courses, lectures: state.lectures, deletedLectureIds: state.deletedLectureIds||[] };
+
+  state.courses = merged.courses;
+  state.lectures = merged.lectures;
+  state.deletedLectureIds = merged.deletedLectureIds;
+
+  const body = {
+    description: 'The Docket — synced app data (do not edit manually)',
+    public: false,
+    files: {
+      'docket-data.json': {
+        content: JSON.stringify({ courses: merged.courses, lectures: merged.lectures, deletedLectureIds: merged.deletedLectureIds }, null, 2)
+      }
+    }
+  };
+
+  const res2 = await fetch(gistId ? `https://api.github.com/gists/${gistId}` : `https://api.github.com/gists`, {
+    method: gistId ? 'PATCH' : 'POST',
+    headers: {
+      'Authorization': `token ${token}`,
+      'Accept': 'application/vnd.github+json',
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(body)
+  });
+  if(!res2.ok){
+    const t = await res2.text().catch(()=> '');
+    throw new Error(`GitHub sync failed (${res2.status}): ${t.slice(0,150)}`);
+  }
+  const gistResult = await res2.json();
+  state.settings.gistId = gistResult.id;
+  state.settings.lastSync = Date.now();
+  saveState();
+}
+
+/* ============ UTIL ============ */
+function escapeHtml(s){
+  return String(s??'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function escapeAttr(s){ return escapeHtml(s); }
+
+/* ============ INIT ============ */
+if('serviceWorker' in navigator){
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(()=>{});
+  });
+}
+render();
+</script>
+</body>
+</html>
